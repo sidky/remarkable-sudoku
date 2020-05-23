@@ -16,11 +16,13 @@
             }
             body {
                 font-family: Arial, Helvetica, sans-serif;
+                margin-left: 80px;
+                margin-top: 100px;
             }
         </style>
     </head>
     <body>
-        <h2>Sudoku - Easy</h2>
+        <h2>Sudoku - <%= title %></h2>
         <table>
             <% board.forEach(function(row) { %>
                 <tr>
@@ -33,13 +35,6 @@
                     <% }) %>
                 </tr>
             <% }) %>
-        </table>
-        <table>
-            <tr>
-                <td class="cell">1</td>
-                <td class="cell"></td>
-                <td class="cell">2</td>
-            </tr>
         </table>
     </body>
 </html>

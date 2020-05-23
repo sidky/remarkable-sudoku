@@ -1,5 +1,8 @@
 import puppeteer from "puppeteer";
 import { logger } from "./logger";
+import { Remarkable } from "remarkable-typescript";
+import ejs from "ejs";
+import { hasShownBefore, setShown } from "./postgres";
 
 export class SudokuGenerator {
     board: number[][];
@@ -25,7 +28,6 @@ export class SudokuGenerator {
             const items: number[] = [];
 
             divboard?.querySelectorAll("div.su-cell").forEach((v, key, parent) => {
-                // logger.info(v);
                 const svg = v.querySelector("svg");
                 const value = svg?.attributes.getNamedItem("number")?.textContent;
 
@@ -52,8 +54,40 @@ export class SudokuGenerator {
 
         this.board = parsedBoard;
 
-        logger.info(this.board);
+        logger.info(`Parsed: ${this.board}`);
 
         await browser.close();
+    }
+
+    async uploadPDF(name: string, client: Remarkable) {
+        logger.info(`Uploading: ${this.board}`);
+        const shown = await hasShownBefore(this.board);
+        logger.info(`Shown: ${shown}`);
+        if (shown) {
+            logger.info(`Board ${this.board} was already shown before`);
+            return;
+        }
+        logger.info("Generating");
+        const content = await ejs.renderFile(`${__dirname}/views/sudoku.ejs`, {
+            "title": name,
+            "board": this.board
+        });
+
+        logger.info(`New page for ${name}: ${content}`);
+
+        const browser = await puppeteer.launch();
+        const page = await browser.newPage();
+        await page.setContent(content, {waitUntil: "domcontentloaded"});
+
+        const buffer = await page.pdf({
+            format: 'A4'
+        });
+        browser.close();
+        await client.refreshToken();
+        const resp = await client.uploadPDF(name, buffer);
+
+        await setShown(this.board);
+
+        return true;
     }
 }

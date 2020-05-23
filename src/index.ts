@@ -1,71 +1,16 @@
 import express from "express";
 import path from "path";
-import puppeteer from "puppeteer";
 import {logger} from "./logger";
 import {SudokuGenerator} from "./sudoku";
+import { RemarkableUtil } from "./remarkable";
+import bodyParser from "body-parser";
+import { Remarkable } from "remarkable-typescript";
 
-const myfunc = async () => {
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
-    await page.goto("https://www.nytimes.com/puzzles/sudoku/easy", {waitUntil: 'networkidle2'});
-
-    const selector = "div.su-board";
-
-    await page.waitForSelector("div.su-board");
-
-    logger.info("--begin--");
-    // console.log(page);
-
-    // const b = await page.evaluate(() => {
-    //     return document.body.innerHTML;
-    // });
-
-    // console.log(b);
-
-    const numbers: number[] = await page.$eval<number[]>(selector, () => {
-        const divboard = document.querySelector("div.su-board");
-
-        const items: number[] = [];
-
-        divboard?.querySelectorAll("div.su-cell").forEach((v, key, parent) => {
-            logger.info(v);
-            const svg = v.querySelector("svg");
-            const value = svg?.attributes.getNamedItem("number")?.textContent;
-
-            if (value != null) {
-                items.push(parseInt(value, 10));
-            } else {
-                items.push(-1);
-            }
-        });
-
-        return items;
-    });
-
-    const board: number[][] = [];
-
-    for (let i = 0; i < 9; i++) {
-        const row: number[] = [];
-
-        for (let j = 0; j < 9; j++) {
-            row.push(numbers[i * 9 + j]);
-        }
-        board.push(row);
-    }
-
-    logger.info(board);
-
-    // await page.evaluate((selector) => {
-    //     console.log("Start,..");
-    //     const html = document.querySelector(selector).innerHTML;
-
-    //     console.log(html);
-    // });
-
-    await browser.close();
+const urls: {[index: string]: string} = {
+    'Easy': 'https://www.nytimes.com/puzzles/sudoku/easy',
+    'Medium': 'https://www.nytimes.com/puzzles/sudoku/medium',
+    'Hard': 'https://www.nytimes.com/puzzles/sudoku/hard'
 };
-
-// myfunc();
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -73,15 +18,55 @@ const port = process.env.PORT || 8080;
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "ejs");
 
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({extended: true}));
+
 app.get("/", (req, res) => {
     res.render("index");
 });
 
-app.get("/sudoku/nytimes", async (req, res) => {
+app.post("/sudoku/sample/nytimes", async (req, res) => {
     const generator = new SudokuGenerator();
     await generator.parseNYTimes("https://www.nytimes.com/puzzles/sudoku/easy");
     res.render("sudoku", {board: generator.board});
 });
+
+app.get("/sudoku/generate", async (req, res) => {
+    const arg = req.body;
+    logger.info(arg);
+
+    const util = new RemarkableUtil();
+    const initialized = await util.initialize();
+
+    if (!initialized) {
+        res.status(401).send({
+            'error': 'Can not initialize. Have you registered the client yet?'
+        });
+        return;
+    }
+
+    const client = util.client;
+    client?.refreshToken();
+
+    for (const t of Object.keys(urls)) {
+        const generator = new SudokuGenerator();
+        const url = urls[t];
+        await generator.parseNYTimes(urls[t] as string);
+        await generator.uploadPDF(t, util.client as Remarkable);
+    }
+
+    res.send({
+        "success": "ok"
+    });
+});
+
+app.post("/remarkable/register", async (req, res) => {
+    logger.info(req.body.token);
+    const remarkable = new RemarkableUtil();
+    await remarkable.register(req.body.token);
+    res.send({'done': 'true'});
+});
+
 
 app.listen(port, () => {
     logger.info(`server started at port: ${port}`);
