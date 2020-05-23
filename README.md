@@ -2,6 +2,8 @@
 A simple tool to parse [Sudoku](https://www.nytimes.com/puzzles/sudoku/easy) from [New York Times](https://www.nytimes.com/) and 
 upload to [Remarkable tablet](https://remarkable.com/).
 
+![](https://i.imgur.com/EW2QRGh.png)
+
 ## Dependencies
 Parsing and generating the Sudoku board is implemented with [puppeteer](https://github.com/puppeteer/puppeteer). Communication with ReMarkable is done through
 [remarkable-typescript](https://github.com/Ogdentrod/reMarkable-typescript).
