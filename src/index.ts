@@ -28,7 +28,7 @@ app.get("/", (req, res) => {
 app.post("/sudoku/sample/nytimes", async (req, res) => {
     const generator = new SudokuGenerator();
     await generator.parseNYTimes("https://www.nytimes.com/puzzles/sudoku/easy");
-    res.render("sudoku", {board: generator.board});
+    res.render("sudoku", {title: "Sample", board: generator.board});
 });
 
 app.get("/sudoku/generate", async (req, res) => {
