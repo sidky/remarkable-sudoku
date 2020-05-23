@@ -32,6 +32,15 @@ app.post("/sudoku/sample/nytimes", async (req, res) => {
 });
 
 app.get("/sudoku/generate", async (req, res) => {
+    const secret = req.query.secret;
+
+    if (secret !== process.env.SECRET) {
+        logger.error(`Invalid secret: ${secret}`);
+        res.status(403).send({
+            'error': 'Secrets did not match'
+        });
+        return;
+    }
     const arg = req.body;
     logger.info(arg);
 
