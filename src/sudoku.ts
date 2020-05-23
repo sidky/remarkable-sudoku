@@ -12,7 +12,7 @@ export class SudokuGenerator {
     }
 
     async parseNYTimes(url: string) {
-        const browser = await puppeteer.launch();
+        const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
         const page = await browser.newPage();
         await page.goto(url, { waitUntil: 'networkidle2' });
 
@@ -75,7 +75,7 @@ export class SudokuGenerator {
 
         logger.info(`New page for ${name}: ${content}`);
 
-        const browser = await puppeteer.launch();
+        const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
         const page = await browser.newPage();
         await page.setContent(content, {waitUntil: "domcontentloaded"});
 
